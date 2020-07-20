@@ -352,3 +352,68 @@
          [
            [?e :db/valueType]
          ]} db))))
+
+(defn with-more-schema-still
+  "
+    Return the given database
+    with a bit more schema transacted
+  "
+  ([db]
+    (d/db-with db
+      [{:db/ident :mass
+         :db/valueType :db.type/ref
+         :db/cardinality :db.cardinality/one}
+       {:db/ident :measurement/value
+         :db/valueType :db.type/bigdec
+         :db/cardinality :db.cardinality/one}
+       {:db/ident :measurement/unit
+         :db/valueType :db.type/keyword
+         :db/cardinality :db.cardinality/one}])))
+
+(defn with-proper-measurements
+  "
+    Returns the given database
+    with data from an experiment
+  "
+  [db]
+  (d/db-with db
+    [
+     {:name :Earth :mass {:measurement/value 5.97237E1024M :measurement/unit :kg}}
+     {:name :Venus :mass {:measurement/value 4.8675E1024M :measurement/unit :kg}}
+    ]))
+
+(defn brief-diversion-query-1c
+  "
+     I changed my mind. Using doubles for
+     mass measurements was a bad idea. I wish I'd
+     used bigdecimals instead, and I wish I'd recorded
+     the units too
+
+     ...well, it's ok!
+
+     We can changed our mind because our
+     database is a value made of facts, so
+     let's add new facts about how we want
+     to store data
+  "
+  ([]
+   (let [db (->
+               (make-db)
+               (with-schema)
+               (with-Earth-based-observations)
+               (with-more-schema)
+               (with-measurements)
+               (with-more-schema-still)
+               (with-proper-measurements))]
+     (d/q
+       '{
+         :find
+         [
+          [pull ?e [:name {:mass [:measurement/value :measurement/unit]}]]
+          ]
+         :where
+         [
+          [?e :mass ?m]
+          [?m :measurement/value ?v]
+          [(> ?v 10E23)]
+          ]} db))))
