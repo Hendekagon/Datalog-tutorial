@@ -27,8 +27,11 @@
 
   symbols prefixed with ? are
   called variables, and they're
-  what the query will return, the rest
-  of the clause is what we want to be true
+  what the query could return and which
+  we want to be true given the rest
+  of the clause -- the query engine
+  will find entities that can be substituted
+  for the ?variables, making the clauses true
 
   A query returns results for which
   *all* the clauses we list are true
@@ -53,7 +56,9 @@
   (and clause0 clause1 clause2...)
 
   the process of ensuring all clauses
-  are true is called 'unification'
+  are true by making sure all
+  their ?variables refer to the same
+  entities is called 'unification'
 
 
   -------- footnotes --------
@@ -144,7 +149,8 @@
       we want it to return
 
       a :where clause, consisting of a vector of clauses
-      which must all be true ('unified')
+      which must all be true, which is to say that their
+      variables must refer to the same things -- be 'unified'
 
     All the variables in :find must be a subset of
     those specified in :where
