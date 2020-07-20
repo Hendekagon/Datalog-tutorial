@@ -1,14 +1,21 @@
 # Datalog tutorial
 
-A Clojure library designed to ... well, that part is up to you.
+A mini Datalog tutorial with minimal dependencies
 
 ## Usage
 
-FIXME
+Evaluate code & see what happens!
+
+```
+(use :reload 'dt.dl)
+(test-query-0)
+...
+```
+
 
 ## License
 
-Copyright © 2018 FIXME
+Copyright © 2020 Matthew Chadwick
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
