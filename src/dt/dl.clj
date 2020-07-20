@@ -263,7 +263,7 @@
 (defn brief-diversion-query-1a
   "
     Wait a minute, when we added the db schema
-    we added as data the same way we added data
+    we added it as data the same way we added data
     from our celestial observations -- couldn't
     we query the schema data too ?
 
@@ -334,6 +334,11 @@
 
      not only can we add new schema as our database matures,
      we can query the database to see our schema
+
+     Sidenote: see how in this query the :where clause
+     doesn't have a value - it's just 2 elements not 3 -
+     well you can do that, it means
+     'where this entity has a value for this attribute'
   "
   ([]
    (let [db (->
@@ -374,6 +379,7 @@
   "
     Returns the given database
     with data from an experiment
+    but do it right this time
   "
   [db]
   (d/db-with db
@@ -391,7 +397,7 @@
 
      ...well, it's ok!
 
-     We can changed our mind because our
+     We can change our mind because our
      database is a value made of facts, so
      let's add new facts about how we want
      to store data
