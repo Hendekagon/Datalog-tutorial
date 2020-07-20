@@ -55,6 +55,13 @@
   the process of ensuring all clauses
   are true is called 'unification'
 
+
+  -------- footnotes --------
+
+  Variables are just symbols -
+  the ? prefix is to identify them as variables
+  to the query engine
+
  ")
 
 
@@ -69,7 +76,7 @@
 
     Note the deref before returning the connection - d/connect
     returns an atom, for use in imperative style, but here
-    I want to demonstratate pure functional style
+    I want to demonstrate pure functional style
     so I'm dereferencing it so we'll only use its value
 
   "
