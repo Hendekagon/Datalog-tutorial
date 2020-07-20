@@ -149,9 +149,6 @@
     [
      {:name :Titan :has :lakes}
      {:name :Rhea :orbits :Saturn :has :ice}
-     {:name :Jupiter :orbits :Sol :has :red-spot}
-     {:name :Jupiter :orbits :Sol :has :magnetic-field}
-     {:name :Io :orbits :Jupiter :has :active-volcanos}
     ]))
 
 (defn with-Jupiter-probe
@@ -162,8 +159,7 @@
   [db]
   (d/db-with db
     [
-     {:name :Jupiter :orbits :Sol :has :red-spot}
-     {:name :Jupiter :orbits :Sol :has :magnetic-field}
+     {:name :Jupiter :orbits :Sol :has #{:magnetic-field :red-spot}}
      {:name :Io :orbits :Jupiter :has :active-volcanos}
     ]))
 
@@ -210,6 +206,7 @@
       (make-db)
       (with-schema)
       (with-Earth-based-observations)
+      (with-Saturn-probe)
       (d/q
         '{
           :find
@@ -229,10 +226,19 @@
     database values work
 
     This returns the result of querying
-    two database values: the first is the one we queried
-    above, the second is with more data (facts) added
+    two database values: first with only Earth-based
+    observations, second with added data from
+    a Jupiter probe
+
+    We get 2 result lists, the second of which
+    includes the data we added -- and look, the
+    first result shows that the first database
+    value db0 is unaffected by our adding more data
 
 
+    Sidenote: have a look at the numbers returned
+    for :db/id and see that they're the same as the
+    results for ?celestial-body
   "
   ([]
    (let [db0 (->
@@ -245,12 +251,12 @@
         '{
           :find
           [
-           [pull ?celestial-body [:name :has :db/id]]
-           ?celestial-body
+            [pull ?celestial-body [:name :has :db/id]]
+            ?celestial-body
            ]
           :where
           [
-           [?celestial-body :has :magnetic-field]
-           [?celestial-body :has :complex-weather]
+            [?celestial-body :has :magnetic-field]
+            [?celestial-body :has :complex-weather]
            ]}) [db0 db1]))))
 
