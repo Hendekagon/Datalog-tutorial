@@ -260,3 +260,95 @@
             [?celestial-body :has :complex-weather]
            ]}) [db0 db1]))))
 
+(defn brief-diversion-query-1a
+  "
+    Wait a minute, when we added the db schema
+    we added as data the same way we added data
+    from our celestial observations -- couldn't
+    we query the schema data too ?
+
+    Well yes, we can -- let's find all entities
+    representing attributes with type keyword
+
+    (brief-diversion-query-1a)
+    =>
+    ([#:db{:id 3, :ident :has, :valueType :db.type/keyword}]
+     [#:db{:id 2, :ident :orbits, :valueType :db.type/keyword}]
+     [#:db{:id 1, :ident :name, :valueType :db.type/keyword}])
+
+    that's our schema, bit predictable since all of them were
+    type keyword
+  "
+  ([]
+   (let [db (->
+               (make-db)
+               (with-schema)
+               (with-Earth-based-observations))]
+     (d/q
+       '{
+         :find
+         [
+          [pull ?e [:db/id :db/ident :db/valueType]]
+         ]
+         :where
+         [
+           [?e :db/valueType :db.type/keyword]
+         ]} db))))
+
+(defn with-more-schema
+  "
+    Return the given database
+    with a bit more schema transacted
+  "
+  ([db]
+    (d/db-with db
+      [{:db/ident :mass
+         :db/valueType :db.type/double
+         :db/cardinality :db.cardinality/one}])))
+
+(defn with-measurements
+  "
+    Returns the given database
+    with data from an experiment
+  "
+  [db]
+  (d/db-with db
+    [
+     {:name :Earth :mass 5.97237E1024}
+     {:name :Venus :mass 4.8675E1024}
+    ]))
+
+(defn brief-diversion-query-1b
+  "
+     Let's take the idea of
+     schema-as-data further and see
+     how we can add more schema
+     and more elaborate data later
+
+     (brief-diversion-query-1b)
+     =>
+      ([#:db{:id 3, :ident :has, :valueType :db.type/keyword}]
+       [#:db{:id 8, :ident :mass, :valueType :db.type/double}]
+       [#:db{:id 2, :ident :orbits, :valueType :db.type/keyword}]
+       [#:db{:id 1, :ident :name, :valueType :db.type/keyword}])
+
+     not only can we add new schema as our database matures,
+     we can query the database to see our schema
+  "
+  ([]
+   (let [db (->
+               (make-db)
+               (with-schema)
+               (with-Earth-based-observations)
+               (with-more-schema)
+               (with-measurements))]
+     (d/q
+       '{
+         :find
+         [
+          [pull ?e [:db/id :db/ident :db/valueType]]
+         ]
+         :where
+         [
+           [?e :db/valueType]
+         ]} db))))
