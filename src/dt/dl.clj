@@ -111,6 +111,7 @@
     (d/db-with db
       [{:db/ident :name
          :db/valueType :db.type/keyword
+         :db/unique :db.unique/identity
          :db/cardinality :db.cardinality/one}
         {:db/ident :orbits
          :db/valueType :db.type/keyword
@@ -119,10 +120,10 @@
          :db/valueType :db.type/keyword
          :db/cardinality :db.cardinality/many}])))
 
-(defn with-data
+(defn with-Earth-based-observations
   "
     Returns the given database
-    with some example data transacted
+    with data observed from Earth
 
     Again - this is like assoc
   "
@@ -131,9 +132,51 @@
     [
       {:name :Saturn :orbits :Sol :has :rings}
       {:name :Jupiter :orbits :Sol :has :complex-weather}
-      {:name :Titan :orbits :Saturn :has :lakes}
-      {:name :Rhea :orbits :Saturn :has :ice}
+      {:name :Titan :orbits :Saturn}
       {:name :Earth :orbits :Sol :has :lakes}
+      {:name :Earth :orbits :Sol :has :complex-weather}
+      {:name :Earth :orbits :Sol :has :magnetic-field}
+      {:name :Earth :orbits :Sol :has :active-volcanos}
+    ]))
+
+(defn with-Saturn-probe
+  "
+    Returns the given database
+    with data from the Saturn probe
+  "
+  [db]
+  (d/db-with db
+    [
+     {:name :Titan :has :lakes}
+     {:name :Rhea :orbits :Saturn :has :ice}
+     {:name :Jupiter :orbits :Sol :has :red-spot}
+     {:name :Jupiter :orbits :Sol :has :magnetic-field}
+     {:name :Io :orbits :Jupiter :has :active-volcanos}
+    ]))
+
+(defn with-Jupiter-probe
+  "
+    Returns the given database
+    with data from the Jupiter probe
+  "
+  [db]
+  (d/db-with db
+    [
+     {:name :Jupiter :orbits :Sol :has :red-spot}
+     {:name :Jupiter :orbits :Sol :has :magnetic-field}
+     {:name :Io :orbits :Jupiter :has :active-volcanos}
+    ]))
+
+(defn with-Venus-probe
+  "
+    Returns the given database
+    with data from the Venus probe
+  "
+  [db]
+  (d/db-with db
+    [
+     {:name :Venus :orbits :Sol :has :complex-weather}
+     {:name :Venus :orbits :Sol :has :active-volcanos}
     ]))
 
 (defn test-query-0
@@ -166,7 +209,7 @@
     (->>
       (make-db)
       (with-schema)
-      (with-data)
+      (with-Earth-based-observations)
       (d/q
         '{
           :find
@@ -179,3 +222,35 @@
            [?celestial-body ?relationship-to :Saturn]
            [?celestial-body :has :lakes]
            ]}))))
+
+(defn test-query-1
+  "
+    Now let's see how immutable
+    database values work
+
+    This returns the result of querying
+    two database values: the first is the one we queried
+    above, the second is with more data (facts) added
+
+
+  "
+  ([]
+   (let [db0 (->
+               (make-db)
+               (with-schema)
+               (with-Earth-based-observations))
+         db1 (with-Jupiter-probe db0)]
+     (map
+       (partial d/q
+        '{
+          :find
+          [
+           [pull ?celestial-body [:name :has :db/id]]
+           ?celestial-body
+           ]
+          :where
+          [
+           [?celestial-body :has :magnetic-field]
+           [?celestial-body :has :complex-weather]
+           ]}) [db0 db1]))))
+
