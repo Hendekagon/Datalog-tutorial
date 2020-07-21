@@ -130,6 +130,7 @@
   [db]
   (d/db-with db
     [
+      {:name :Sol}
       {:name :Saturn :orbits :Sol :has :rings}
       {:name :Jupiter :orbits :Sol :has :complex-weather}
       {:name :Titan :orbits :Saturn}
@@ -159,7 +160,7 @@
   [db]
   (d/db-with db
     [
-     {:name :Jupiter :orbits :Sol :has #{:magnetic-field :red-spot}}
+     {:name :Jupiter :has #{:magnetic-field :red-spot}}
      {:name :Io :orbits :Jupiter :has :active-volcanos}
     ]))
 
@@ -171,7 +172,7 @@
   [db]
   (d/db-with db
     [
-     {:name :Venus :orbits :Sol :has :complex-weather}
+     {:name :Venus :has :complex-weather}
      {:name :Venus :orbits :Sol :has :active-volcanos}
     ]))
 
@@ -339,6 +340,8 @@
      doesn't have a value - it's just 2 elements not 3 -
      well you can do that, it means
      'where this entity has a value for this attribute'
+     Sidenote: in Datomic you can even query its representation
+     of schemas
   "
   ([]
    (let [db (->
@@ -401,6 +404,10 @@
      database is a value made of facts, so
      let's add new facts about how we want
      to store data
+
+     sidenote: we can always add new schema, but
+     there are conditions for updating existing
+     schema
   "
   ([]
    (let [db (->
@@ -423,3 +430,42 @@
           [?m :measurement/value ?v]
           [(> ?v 10E23)]
           ]} db))))
+
+(defn test-query-2
+  "
+    Getting back to the point
+    about immutable database values,
+    the thing about this is that we
+    have the freedom to try speculative
+    updates to our database to see what
+    might happen, we can query the resulting
+    database value and if we're happy we
+    can actually transact it.
+
+    This makes testing easy because we're
+    free from all the potential bugs that
+    come from managing state. We can create,
+    update and query a database in a
+    purely functional way with predictable
+    results, simulating what it would be like
+    to use the database in real life
+  "
+  ([]
+   (let [db0 (-> (make-db) (with-schema) (with-more-schema-still))
+         dbs (reductions (fn [r f] (f r)) db0
+               [with-Earth-based-observations with-Jupiter-probe
+                with-Saturn-probe with-Venus-probe])]
+     (map
+       (partial d/q
+        '{
+          :find
+          [
+           ?name
+           [pull ?another-body [:name]]
+           ]
+          :where
+          [
+           [?celestial-body :orbits ?x]
+           [?another-body :name ?x]
+           [?celestial-body :name ?name]
+           ]}) dbs))))
