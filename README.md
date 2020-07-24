@@ -1,6 +1,6 @@
 # Datalog tutorial
 
-A mini Datalog tutorial with minimal dependencies
+A mini Datalog tutorial with minimal dependencies for people who know some Clojure
 
 ## Usage
 
