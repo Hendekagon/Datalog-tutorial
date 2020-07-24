@@ -4,7 +4,7 @@ A mini Datalog tutorial with minimal dependencies for people who know some Cloju
 
 ## Usage
 
-Evaluate code & see what happens!
+Read, modify and evaluate the code & see what happens!
 
 ```
 (use 'dt.dl)
