@@ -267,8 +267,8 @@
             [?celestial-body :has :complex-weather]
            ]}) [db0 db1]))))
 
-(defn brief-diversion-query-1a
-  "
+(defn brief-diversion-query-1-a
+  ^{:doc "
     Wait a minute, when we added the db schema
     we added it as data the same way we added data
     from our celestial observations -- couldn't
@@ -285,7 +285,7 @@
 
     that's our schema, bit predictable since all of them were
     type keyword
-  "
+  " :from 'test-query-1}
   ([]
    (let [db (->
                (make-db)
@@ -325,7 +325,7 @@
      {:name :Venus :mass 4.8675E1024}
     ]))
 
-(defn brief-diversion-query-1b
+(defn brief-diversion-query-1-b
   "
      Let's take the idea of
      schema-as-data further and see
@@ -397,7 +397,7 @@
      {:name :Venus :mass {:measurement/value 4.8675E1024M :measurement/unit :kg}}
     ]))
 
-(defn brief-diversion-query-1c
+(defn brief-diversion-query-1-c
   "
      I changed my mind. Using doubles for
      mass measurements was a bad idea. I wish I'd
@@ -528,7 +528,7 @@
     Actually when facts are stored, the transaction
     and its time is stored too
 
-    [e a v t]
+    [entity attribute value t]
 
     is a full datom and we can add time to our queries
     by using a variable in the 4th position of a clause
