@@ -7,8 +7,11 @@ A mini Datalog tutorial with minimal dependencies
 Evaluate code & see what happens!
 
 ```
-(use :reload 'dt.dl)
+(use 'dt.dl)
+
 (test-query-0)
+(test-query-1)
+(test-query-2)
 ...
 ```
 
