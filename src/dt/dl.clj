@@ -27,11 +27,10 @@
 
   symbols prefixed with ? are
   called variables, and they're
-  what the query could return and which
-  we want to be true given the rest
-  of the clause -- the query engine
-  will find entities that can be substituted
-  for the ?variables, making the clauses true
+  what the query could return as results.
+  The query engine will find entities
+  that can be substituted for the ?variables,
+  making the clauses true
 
   A query returns results for which
   *all* the clauses we list are true
@@ -60,12 +59,23 @@
   their ?variables refer to the same
   entities is called 'unification'
 
+  In the example above, we want entities
+  ?animal which both :eats :carrots and
+  :has :wings
+
+  Entities are stored as numbers
+  in the database
+
 
   -------- footnotes --------
 
   Variables are just symbols -
   the ? prefix is to identify them as variables
   to the query engine
+
+  Evaluate the test-query-x functions,
+  modify them and see what happens
+
 
  ")
 
@@ -104,8 +114,6 @@
     with the given data transacted, in this case
     schema data.
 
-    It's like assoc
-
   "
   ([db]
     (d/db-with db
@@ -124,8 +132,6 @@
   "
     Returns the given database
     with data observed from Earth
-
-    Again - this is like assoc
   "
   [db]
   (d/db-with db
@@ -237,7 +243,7 @@
     value db0 is unaffected by our adding more data
 
 
-    Sidenote: have a look at the numbers returned
+    sidenote: have a look at the numbers returned
     for :db/id and see that they're the same as the
     results for ?celestial-body
   "
@@ -336,11 +342,11 @@
      not only can we add new schema as our database matures,
      we can query the database to see our schema
 
-     Sidenote: see how in this query the :where clause
+     sidenote: see how in this query the :where clause
      doesn't have a value - it's just 2 elements not 3 -
      well you can do that, it means
      'where this entity has a value for this attribute'
-     Sidenote: in Datomic you can even query its representation
+     sidenote: in Datomic you can even query its representation
      of schemas
   "
   ([]
@@ -469,3 +475,77 @@
            [?another-body :name ?x]
            [?celestial-body :name ?name]
            ]}) dbs))))
+
+(defn test-query-3
+  "
+    Taking a closer look at the terms
+    'entity' and 'attribute'
+
+    Datoms representing facts
+
+    [e a v]
+
+    relate entities to attribute values.
+
+    Attributes are stored as entities too,
+    as we saw when we stored schema
+
+    (test-query-3)
+    => #{[6 :orbits 2] [5 :orbits 2] [8 :orbits 2]}
+
+    in queries an attribute is specified by a keyword,
+    the :db/indent of the entity representing that attribute.
+    Hence, we see that :orbits is the :db/ident of entity 2,
+    the entity representing the attribute :orbits
+
+    sidenote: see how we can use functions in queries
+    sidenote: see how clauses in :where don't always have to
+    relate to eachother
+  "
+  ([]
+    (->> (make-db)
+      (with-schema)
+      (with-Earth-based-observations)
+      (d/q
+        '{:find [?e ?a ?f]
+          :where
+            [
+              [?e ?a :Sol]
+              [(= ?a :orbits)]
+              [?f :db/ident :orbits]]}))))
+
+(defn test-query-4
+  "
+    Time
+
+    We now know how to store facts
+    and query the database but what
+    about time ?
+
+    How can we find out when a fact
+    was stored ?
+
+    Actually when facts are stored, the transaction
+    and its time is stored too
+
+    [e a v t]
+
+    is a full datom and we can add time to our queries
+    by using a variable in the 4th position of a clause
+
+    Each transaction is an entity in itself and we can
+    use the attribute :db/txInstant to get the time
+    of the transaction in which a fact was stored
+  "
+  ([]
+    (->> (make-db)
+      (with-schema)
+      (with-Earth-based-observations)
+      (d/q
+        '{:find [?n ?t ?i]
+          :where
+          [
+           [?e :orbits :Sol ?t]
+           [?e :name ?n]
+           [?t :db/txInstant ?i]
+           ]}))))
