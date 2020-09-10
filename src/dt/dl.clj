@@ -67,7 +67,7 @@
   in the database
 
 
-  -------- footnotes --------
+  -------- notes --------
 
   Variables are just symbols -
   the ? prefix is to identify them as variables
@@ -76,7 +76,7 @@
   Evaluate the test-query-x functions,
   modify them and see what happens
 
-
+  -----------------------
  ")
 
 
@@ -528,7 +528,7 @@
     Actually when facts are stored, the transaction
     and its time is stored too
 
-    [entity attribute value t]
+    [entity attribute value tx]
 
     is a full datom and we can add time to our queries
     by using a variable in the 4th position of a clause
@@ -536,6 +536,14 @@
     Each transaction is an entity in itself and we can
     use the attribute :db/txInstant to get the time
     of the transaction in which a fact was stored
+
+
+    sidenote: actually a full datom is
+
+    [entity attribute value tx op]
+
+    where op is a boolean indicating whether
+    the fact stored was an assertion or retraction
   "
   ([]
     (->> (make-db)
