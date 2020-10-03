@@ -1,5 +1,5 @@
 (ns dt.dl
-  (:require [datahike.api :as d]))
+  (:require [datascript.core :as d]))
 
 (comment
  "
@@ -86,9 +86,6 @@
 
     This is an immutable in-memory database
 
-    In Datahike, connections and database values are
-    usually interchangable, but in Datomic they're different
-
     Note the deref before returning the connection - d/connect
     returns an atom, for use in imperative style, but here
     I want to demonstrate pure functional style
@@ -96,37 +93,31 @@
 
   "
   ([]
-    (make-db {:store {:backend :mem :id "mem-example"}}))
-  ([cfg]
-    (when (d/database-exists? cfg)
-      (d/delete-database cfg))
-    (d/create-database cfg)
-    @(d/connect cfg)))
+    (d/empty-db)))
 
 (defn with-schema
   "
     Return the given database
     with a schema transacted
 
-    Note the use of d/db-with
-    - this doesn't affect the database
-    passed in, instead it returns a new value
-    with the given data transacted, in this case
-    schema data.
+   Datascript has a different
+   concept of schema to Datomic,
+   for one it doesn't care about
+   :db/valueType unless it's :db.type/ref
 
   "
   ([db]
-    (d/db-with db
-      [{:db/ident :name
-         :db/valueType :db.type/keyword
-         :db/unique :db.unique/identity
-         :db/cardinality :db.cardinality/one}
-        {:db/ident :orbits
-         :db/valueType :db.type/keyword
-         :db/cardinality :db.cardinality/many}
-        {:db/ident :has
-         :db/valueType :db.type/keyword
-         :db/cardinality :db.cardinality/many}])))
+    (d/init-db (into-array (d/datoms db :eavt))
+      {:name
+       {:db'/valueType :db.type/keyword
+        :db/unique :db.unique/identity
+        :db/cardinality :db.cardinality/one}
+       :orbits
+       {:db'/valueType :db.type/keyword
+        :db/cardinality :db.cardinality/many}
+       :has
+       {:db'/valueType :db.type/keyword
+        :db/cardinality :db.cardinality/many}})))
 
 (defn with-Earth-based-observations
   "
@@ -218,7 +209,7 @@
         '{
           :find
           [
-           [pull ?celestial-body [:name]]
+           (pull ?celestial-body [:name])
            ?relationship-to
            ]
           :where
@@ -267,51 +258,16 @@
             [?celestial-body :has :complex-weather]
            ]}) [db0 db1]))))
 
-(defn brief-diversion-query-1a
-  "
-    Wait a minute, when we added the db schema
-    we added it as data the same way we added data
-    from our celestial observations -- couldn't
-    we query the schema data too ?
-
-    Well yes, we can -- let's find all entities
-    representing attributes with type keyword
-
-    (brief-diversion-query-1a)
-    =>
-    ([#:db{:id 3, :ident :has, :valueType :db.type/keyword}]
-     [#:db{:id 2, :ident :orbits, :valueType :db.type/keyword}]
-     [#:db{:id 1, :ident :name, :valueType :db.type/keyword}])
-
-    that's our schema, bit predictable since all of them were
-    type keyword
-  "
-  ([]
-   (let [db (->
-               (make-db)
-               (with-schema)
-               (with-Earth-based-observations))]
-     (d/q
-       '{
-         :find
-         [
-          [pull ?e [:db/id :db/ident :db/valueType]]
-         ]
-         :where
-         [
-           [?e :db/valueType :db.type/keyword]
-         ]} db))))
-
 (defn with-more-schema
   "
     Return the given database
     with a bit more schema transacted
   "
   ([db]
-    (d/db-with db
-      [{:db/ident :mass
-         :db/valueType :db.type/double
-         :db/cardinality :db.cardinality/one}])))
+    (d/init-db (into-array (d/datoms db :eavt))
+      {:mass
+       {:db'/valueType :db.type/double
+        :db/cardinality :db.cardinality/one}})))
 
 (defn with-measurements
   "
@@ -325,64 +281,22 @@
      {:name :Venus :mass 4.8675E1024}
     ]))
 
-(defn brief-diversion-query-1b
-  "
-     Let's take the idea of
-     schema-as-data further and see
-     how we can add more schema
-     and more elaborate data later
-
-     (brief-diversion-query-1b)
-     =>
-      ([#:db{:id 3, :ident :has, :valueType :db.type/keyword}]
-       [#:db{:id 8, :ident :mass, :valueType :db.type/double}]
-       [#:db{:id 2, :ident :orbits, :valueType :db.type/keyword}]
-       [#:db{:id 1, :ident :name, :valueType :db.type/keyword}])
-
-     not only can we add new schema as our database matures,
-     we can query the database to see our schema
-
-     sidenote: see how in this query the :where clause
-     doesn't have a value - it's just 2 elements not 3 -
-     well you can do that, it means
-     'where this entity has a value for this attribute'
-     sidenote: in Datomic you can even query its representation
-     of schemas
-  "
-  ([]
-   (let [db (->
-               (make-db)
-               (with-schema)
-               (with-Earth-based-observations)
-               (with-more-schema)
-               (with-measurements))]
-     (d/q
-       '{
-         :find
-         [
-          [pull ?e [:db/id :db/ident :db/valueType]]
-         ]
-         :where
-         [
-           [?e :db/valueType]
-         ]} db))))
-
 (defn with-more-schema-still
   "
     Return the given database
     with a bit more schema transacted
   "
   ([db]
-    (d/db-with db
-      [{:db/ident :mass
-         :db/valueType :db.type/ref
-         :db/cardinality :db.cardinality/one}
-       {:db/ident :measurement/value
-         :db/valueType :db.type/bigdec
-         :db/cardinality :db.cardinality/one}
-       {:db/ident :measurement/unit
-         :db/valueType :db.type/keyword
-         :db/cardinality :db.cardinality/one}])))
+    (d/init-db (into-array (d/datoms db :eavt))
+      {:mass
+       {:db'/valueType :db.type/ref
+        :db/cardinality :db.cardinality/one}
+       :measurement/value
+       {:db'/valueType :db.type/bigdec
+        :db/cardinality :db.cardinality/one}
+       :measurement/unit
+       {:db'/valueType :db.type/keyword
+        :db/cardinality :db.cardinality/one}})))
 
 (defn with-proper-measurements
   "
@@ -396,46 +310,6 @@
      {:name :Earth :mass {:measurement/value 5.97237E1024M :measurement/unit :kg}}
      {:name :Venus :mass {:measurement/value 4.8675E1024M :measurement/unit :kg}}
     ]))
-
-(defn brief-diversion-query-1c
-  "
-     I changed my mind. Using doubles for
-     mass measurements was a bad idea. I wish I'd
-     used bigdecimals instead, and I wish I'd recorded
-     the units too
-
-     ...well, it's ok!
-
-     We can change our mind because our
-     database is a value made of facts, so
-     let's add new facts about how we want
-     to store data
-
-     sidenote: we can always add new schema, but
-     there are conditions for updating existing
-     schema
-  "
-  ([]
-   (let [db (->
-               (make-db)
-               (with-schema)
-               (with-Earth-based-observations)
-               (with-more-schema)
-               (with-measurements)
-               (with-more-schema-still)
-               (with-proper-measurements))]
-     (d/q
-       '{
-         :find
-         [
-          [pull ?e [:name {:mass [:measurement/value :measurement/unit]}]]
-          ]
-         :where
-         [
-          [?e :mass ?m]
-          [?m :measurement/value ?v]
-          [(> ?v 10E23)]
-          ]} db))))
 
 (defn test-query-2
   "

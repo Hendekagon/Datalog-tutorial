@@ -1,4 +1,4 @@
 {:paths ["src"]
  :deps
  {org.clojure/clojure {:mvn/version "1.10.1"}
-  io.replikativ/datahike {:mvn/version "0.3.1"}}}
+  datascript {:mvn/version "1.0.1"}}}
