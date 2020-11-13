@@ -82,12 +82,7 @@
 
 (defn make-db
   "
-    Return a database value
-
-    This is an immutable in-memory database
-
-    In Datahike, connections and database values are
-    usually interchangable, but in Datomic they're different
+    Return a an immutable in-memory database value
 
     Note the deref before returning the connection - d/connect
     returns an atom, for use in imperative style, but here
@@ -103,7 +98,7 @@
     (d/create-database cfg)
     @(d/connect cfg)))
 
-(defn with-schema
+(defn get-schema
   "
     Return the given database
     with a schema transacted
@@ -115,72 +110,67 @@
     schema data.
 
   "
-  ([db]
-    (d/db-with db
-      [{:db/ident :name
-         :db/valueType :db.type/keyword
-         :db/unique :db.unique/identity
-         :db/cardinality :db.cardinality/one}
-        {:db/ident :orbits
-         :db/valueType :db.type/keyword
-         :db/cardinality :db.cardinality/many}
-        {:db/ident :has
-         :db/valueType :db.type/keyword
-         :db/cardinality :db.cardinality/many}])))
+  ([]
+   [{:db/ident :name
+     :db/valueType :db.type/keyword
+     :db/unique :db.unique/identity
+     :db/cardinality :db.cardinality/one}
+    {:db/ident :orbits
+     :db/valueType :db.type/keyword
+     :db/cardinality :db.cardinality/many}
+    {:db/ident :has
+     :db/valueType :db.type/keyword
+     :db/cardinality :db.cardinality/many}]))
 
-(defn with-Earth-based-observations
+(defn Earth-based-observations
   "
     Returns the given database
     with data observed from Earth
   "
-  [db]
-  (d/db-with db
+  []
     [
-      {:name :Sol}
-      {:name :Saturn :orbits :Sol :has :rings}
-      {:name :Jupiter :orbits :Sol :has :complex-weather}
-      {:name :Titan :orbits :Saturn}
-      {:name :Earth :orbits :Sol :has :lakes}
-      {:name :Earth :orbits :Sol :has :complex-weather}
-      {:name :Earth :orbits :Sol :has :magnetic-field}
-      {:name :Earth :orbits :Sol :has :active-volcanos}
-    ]))
+     {:name :Sol}
+     {:name :Saturn :orbits :Sol :has :rings}
+     {:name :Jupiter :orbits :Sol :has :complex-weather}
+     {:name :Titan :orbits :Saturn}
+     {:name :Earth :orbits :Sol :has :lakes}
+     {:name :Earth :orbits :Sol :has :complex-weather}
+     {:name :Earth :orbits :Sol :has :magnetic-field}
+     {:name :Earth :orbits :Sol :has :active-volcanos}
+     ])
 
-(defn with-Saturn-probe
+(defn Saturn-probe-observations
   "
     Returns the given database
     with data from the Saturn probe
   "
-  [db]
-  (d/db-with db
-    [
-     {:name :Titan :has :lakes}
-     {:name :Rhea :orbits :Saturn :has :ice}
-    ]))
+  []
+  [
+   {:name :Titan :has :lakes}
+   {:name :Rhea :orbits :Saturn :has :ice}
+   ])
 
-(defn with-Jupiter-probe
+(defn Jupiter-probe-observations
   "
     Returns the given database
     with data from the Jupiter probe
   "
-  [db]
-  (d/db-with db
-    [
-     {:name :Jupiter :has #{:magnetic-field :red-spot}}
-     {:name :Io :orbits :Jupiter :has :active-volcanos}
-    ]))
+  []
+  [
+   {:name :Jupiter :has #{:magnetic-field :red-spot}}
+   {:name :Io :orbits :Jupiter :has :active-volcanos}
+   ])
 
-(defn with-Venus-probe
+(defn Venus-probe-observations
   "
     Returns the given database
     with data from the Venus probe
   "
-  [db]
-  (d/db-with db
-    [
-     {:name :Venus :has :complex-weather}
-     {:name :Venus :orbits :Sol :has :active-volcanos}
-    ]))
+  []
+  [
+   {:name :Venus :has :complex-weather}
+   {:name :Venus :orbits :Sol :has :active-volcanos}
+   ])
 
 (defn test-query-0
   "
@@ -209,11 +199,11 @@
 
   "
   ([]
-    (->>
+    (->
       (make-db)
-      (with-schema)
-      (with-Earth-based-observations)
-      (with-Saturn-probe)
+      (d/db-with (schema))
+      (d/db-with (Earth-based-observations))
+      (d/db-with (Saturn-probe-observations))
       (d/q
         '{
           :find
@@ -250,9 +240,9 @@
   ([]
    (let [db0 (->
                (make-db)
-               (with-schema)
-               (with-Earth-based-observations))
-         db1 (with-Jupiter-probe db0)]
+               (d/db-with (schema))
+               (d/db-with (Earth-based-observations)))
+         db1 (d/db-with db0 (Jupiter-probe-observations))]
      (map
        (partial d/q
         '{
@@ -289,8 +279,8 @@
   ([]
    (let [db (->
                (make-db)
-               (with-schema)
-               (with-Earth-based-observations))]
+               (d/db-with (schema))
+               (d/db-with (Earth-based-observations)))]
      (d/q
        '{
          :find
@@ -302,28 +292,26 @@
            [?e :db/valueType :db.type/keyword]
          ]} db))))
 
-(defn with-more-schema
+(defn more-schema
   "
     Return the given database
     with a bit more schema transacted
   "
-  ([db]
-    (d/db-with db
-      [{:db/ident :mass
-         :db/valueType :db.type/double
-         :db/cardinality :db.cardinality/one}])))
+  ([]
+   [{:db/ident :mass
+     :db/valueType :db.type/double
+     :db/cardinality :db.cardinality/one}]))
 
-(defn with-measurements
+(defn measurements
   "
     Returns the given database
     with data from an experiment
   "
-  [db]
-  (d/db-with db
-    [
-     {:name :Earth :mass 5.97237E1024}
-     {:name :Venus :mass 4.8675E1024}
-    ]))
+  []
+  [
+   {:name :Earth :mass 5.97237E1024}
+   {:name :Venus :mass 4.8675E1024}
+   ])
 
 (defn brief-diversion-query-1b
   "
@@ -352,10 +340,10 @@
   ([]
    (let [db (->
                (make-db)
-               (with-schema)
-               (with-Earth-based-observations)
-               (with-more-schema)
-               (with-measurements))]
+               (d/db-with (schema))
+               (d/db-with (Earth-based-observations))
+               (d/db-with (more-schema))
+               (d/db-with (measurements)))]
      (d/q
        '{
          :find
@@ -367,35 +355,33 @@
            [?e :db/valueType]
          ]} db))))
 
-(defn with-more-schema-still
+(defn more-schema-still
   "
     Return the given database
     with a bit more schema transacted
   "
-  ([db]
-    (d/db-with db
-      [{:db/ident :mass
-         :db/valueType :db.type/ref
-         :db/cardinality :db.cardinality/one}
-       {:db/ident :measurement/value
-         :db/valueType :db.type/bigdec
-         :db/cardinality :db.cardinality/one}
-       {:db/ident :measurement/unit
-         :db/valueType :db.type/keyword
-         :db/cardinality :db.cardinality/one}])))
+  ([]
+   [{:db/ident :mass
+     :db/valueType :db.type/ref
+     :db/cardinality :db.cardinality/one}
+    {:db/ident :measurement/value
+     :db/valueType :db.type/bigdec
+     :db/cardinality :db.cardinality/one}
+    {:db/ident :measurement/unit
+     :db/valueType :db.type/keyword
+     :db/cardinality :db.cardinality/one}]))
 
-(defn with-proper-measurements
+(defn proper-measurements
   "
     Returns the given database
     with data from an experiment
     but do it right this time
   "
-  [db]
-  (d/db-with db
-    [
-     {:name :Earth :mass {:measurement/value 5.97237E1024M :measurement/unit :kg}}
-     {:name :Venus :mass {:measurement/value 4.8675E1024M :measurement/unit :kg}}
-    ]))
+  []
+  [
+   {:name :Earth :mass {:measurement/value 5.97237E1024M :measurement/unit :kg}}
+   {:name :Venus :mass {:measurement/value 4.8675E1024M :measurement/unit :kg}}
+   ])
 
 (defn brief-diversion-query-1c
   "
@@ -418,12 +404,12 @@
   ([]
    (let [db (->
                (make-db)
-               (with-schema)
-               (with-Earth-based-observations)
-               (with-more-schema)
-               (with-measurements)
-               (with-more-schema-still)
-               (with-proper-measurements))]
+               (d/db-with (schema))
+               (d/db-with (Earth-based-observations))
+               (d/db-with (more-schema))
+               (d/db-with (measurements))
+               (d/db-with (more-schema-still))
+               (d/db-with (proper-measurements)))]
      (d/q
        '{
          :find
@@ -457,10 +443,12 @@
     to use the database in real life
   "
   ([]
-   (let [db0 (-> (make-db) (with-schema) (with-more-schema-still))
-         dbs (reductions (fn [r f] (f r)) db0
-               [with-Earth-based-observations with-Jupiter-probe
-                with-Saturn-probe with-Venus-probe])]
+   (let [db0 (-> (make-db)
+                 (d/db-with (get-schema))
+                 (d/db-with (more-schema-still)))
+         dbs (reductions (fn [r f] (d/db-with r (f))) db0
+               [Earth-based-observations Jupiter-probe-observations
+                Saturn-probe-observations Venus-probe-observations])]
      (map
        (partial d/q
         '{
@@ -504,8 +492,8 @@
   "
   ([]
     (->> (make-db)
-      (with-schema)
-      (with-Earth-based-observations)
+      (d/db-with (schema))
+      (d/db-with (Earth-based-observations))
       (d/q
         '{:find [?e ?a ?f]
           :where
@@ -547,8 +535,8 @@
   "
   ([]
     (->> (make-db)
-      (with-schema)
-      (with-Earth-based-observations)
+      (d/db-with (schema))
+      (d/db-with (Earth-based-observations))
       (d/q
         '{:find [?n ?t ?i]
           :where
