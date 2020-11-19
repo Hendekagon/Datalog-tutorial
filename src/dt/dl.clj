@@ -67,7 +67,7 @@
   in the database
 
 
-  -------- notes --------
+  -------- footnotes --------
 
   Variables are just symbols -
   the ? prefix is to identify them as variables
@@ -76,13 +76,15 @@
   Evaluate the test-query-x functions,
   modify them and see what happens
 
-  -----------------------
+
  ")
 
 
 (defn make-db
   "
-    Return a an immutable in-memory database value
+    Return a database value
+
+    This is an immutable in-memory database
 
     Note the deref before returning the connection - d/connect
     returns an atom, for use in imperative style, but here
@@ -98,7 +100,7 @@
     (d/create-database cfg)
     @(d/connect cfg)))
 
-(defn get-schema
+(defn with-schema
   "
     Return the given database
     with a schema transacted
@@ -110,109 +112,117 @@
     schema data.
 
   "
-  ([]
-   [{:db/ident :name
-     :db/valueType :db.type/keyword
-     :db/unique :db.unique/identity
-     :db/cardinality :db.cardinality/one}
-    {:db/ident :orbits
-     :db/valueType :db.type/keyword
-     :db/cardinality :db.cardinality/many}
-    {:db/ident :has
-     :db/valueType :db.type/keyword
-     :db/cardinality :db.cardinality/many}]))
+  ([db]
+    (d/db-with db
+      [{:db/ident :name
+         :db/valueType :db.type/keyword
+         :db/unique :db.unique/identity
+         :db/cardinality :db.cardinality/one}
+        {:db/ident :orbits
+         :db/valueType :db.type/keyword
+         :db/cardinality :db.cardinality/many}
+        {:db/ident :has
+         :db/valueType :db.type/keyword
+         :db/cardinality :db.cardinality/many}])))
 
-(defn Earth-based-observations
+(defn with-Earth-based-observations
   "
-    Returns data observed from Earth
+    Returns the given database
+    with data observed from Earth
   "
-  []
+  [db]
+  (d/db-with db
     [
-     {:name :Sol}
-     {:name :Saturn :orbits :Sol :has :rings}
-     {:name :Jupiter :orbits :Sol :has :complex-weather}
-     {:name :Titan :orbits :Saturn}
-     {:name :Earth :orbits :Sol :has :lakes}
-     {:name :Earth :orbits :Sol :has :complex-weather}
-     {:name :Earth :orbits :Sol :has :magnetic-field}
-     {:name :Earth :orbits :Sol :has :active-volcanos}
-     ])
+      {:name :Sol}
+      {:name :Saturn :orbits :Sol :has :rings}
+      {:name :Jupiter :orbits :Sol :has :complex-weather}
+      {:name :Titan :orbits :Saturn}
+      {:name :Earth :orbits :Sol :has :lakes}
+      {:name :Earth :orbits :Sol :has :complex-weather}
+      {:name :Earth :orbits :Sol :has :magnetic-field}
+      {:name :Earth :orbits :Sol :has :active-volcanos}
+    ]))
 
-(defn Saturn-probe-observations
+(defn with-Saturn-probe
   "
-    Returns data from the Saturn probe
+    Returns the given database
+    with data from the Saturn probe
   "
-  []
-  [
-   {:name :Titan :has :lakes}
-   {:name :Rhea :orbits :Saturn :has :ice}
-   ])
+  [db]
+  (d/db-with db
+    [
+     {:name :Titan :has :lakes}
+     {:name :Rhea :orbits :Saturn :has :ice}
+    ]))
 
-(defn Jupiter-probe-observations
+(defn with-Jupiter-probe
   "
-    Returns data from the Jupiter probe
+    Returns the given database
+    with data from the Jupiter probe
   "
-  []
-  [
-   {:name :Jupiter :has #{:magnetic-field :red-spot}}
-   {:name :Io :orbits :Jupiter :has :active-volcanos}
-   ])
+  [db]
+  (d/db-with db
+    [
+     {:name :Jupiter :has #{:magnetic-field :red-spot}}
+     {:name :Io :orbits :Jupiter :has :active-volcanos}
+    ]))
 
-(defn Venus-probe-observations
+(defn with-Venus-probe
   "
-    Returns data from the Venus probe
+    Returns the given database
+    with data from the Venus probe
   "
-  []
-  [
-   {:name :Venus :has :complex-weather}
-   {:name :Venus :orbits :Sol :has :active-volcanos}
-   ])
+  [db]
+  (d/db-with db
+    [
+     {:name :Venus :has :complex-weather}
+     {:name :Venus :orbits :Sol :has :active-volcanos}
+    ]))
 
-(defn
-  ^{:doc
-    [:div
-     [:h1 "Return results of an example query"]
-     [:div "Make a database, transact a schema, add some data
-            then query"]
-     [:ul "The query has two parts:"
-      [:li [:span "a" [:span.ref {:ref [:find]} [:code ":find"] [:span "clause"]] [:span ", consisting of a vector of things
-              we want it to return"]]]
-      [:li "a :where clause, consisting of a vector of clauses
-              which must all be true, which is to say that their
-              variables must refer to the same things -- be 'unified'"]]
-     [:p "All the variables in :find must be a subset of
-            those specified in :where"]
-     [:code
-      "{:in (test-query-0)
-        :out ([{:name :Titan} :orbits])}"]
-     [:p "Here we used two different patterns in the :find clause,
-          a pull and a direct entity..."]]}
-  test-query-0
+(defn test-query-0
+  "
+    Return results of an example query
+
+    Make a database, transact a schema, add some data
+    then query it
+
+    The query has two parts:
+
+      a :find clause, consisting of a vector of things
+      we want it to return
+
+      a :where clause, consisting of a vector of clauses
+      which must all be true, which is to say that their
+      variables must refer to the same things -- be 'unified'
+
+    All the variables in :find must be a subset of
+    those specified in :where
+
+    (test-query-0)
+    => ([{:name :Titan} :orbits])
+
+    Here we used two different patterns in the :find clause,
+    a pull and a direct entity...
+
+  "
   ([]
-    (->
+    (->>
       (make-db)
-      (d/with (get-schema))
-      :db-after
-      (d/with (Earth-based-observations))
-      :db-after
-      (d/with (Saturn-probe-observations))
-      :db-after
-      (->>
-        (d/q
-         '{
-           :find
-           [
-            [pull ?celestial-body [:name]]
-            ?relationship-to
-            ]
-           :where
-           [
-            [?celestial-body ?relationship-to :Saturn]
-            [?celestial-body :has :lakes]
-            ]})))))
-
-(comment
-  (test-query-0))
+      (with-schema)
+      (with-Earth-based-observations)
+      (with-Saturn-probe)
+      (d/q
+        '{
+          :find
+          [
+           [pull ?celestial-body [:name]]
+           ?relationship-to
+           ]
+          :where
+          [
+           [?celestial-body ?relationship-to :Saturn]
+           [?celestial-body :has :lakes]
+           ]}))))
 
 (defn test-query-1
   "
@@ -237,9 +247,9 @@
   ([]
    (let [db0 (->
                (make-db)
-               (d/db-with (get-schema))
-               (d/db-with (Earth-based-observations)))
-         db1 (d/db-with db0 (Jupiter-probe-observations))]
+               (with-schema)
+               (with-Earth-based-observations))
+         db1 (with-Jupiter-probe db0)]
      (map
        (partial d/q
         '{
@@ -276,8 +286,8 @@
   ([]
    (let [db (->
                (make-db)
-               (d/db-with (get-schema))
-               (d/db-with (Earth-based-observations)))]
+               (with-schema)
+               (with-Earth-based-observations))]
      (d/q
        '{
          :find
@@ -289,26 +299,28 @@
            [?e :db/valueType :db.type/keyword]
          ]} db))))
 
-(defn more-schema
+(defn with-more-schema
   "
     Return the given database
     with a bit more schema transacted
   "
-  ([]
-   [{:db/ident :mass
-     :db/valueType :db.type/double
-     :db/cardinality :db.cardinality/one}]))
+  ([db]
+    (d/db-with db
+      [{:db/ident :mass
+         :db/valueType :db.type/double
+         :db/cardinality :db.cardinality/one}])))
 
-(defn measurements
+(defn with-measurements
   "
     Returns the given database
     with data from an experiment
   "
-  []
-  [
-   {:name :Earth :mass 5.97237E1024}
-   {:name :Venus :mass 4.8675E1024}
-   ])
+  [db]
+  (d/db-with db
+    [
+     {:name :Earth :mass 5.97237E1024}
+     {:name :Venus :mass 4.8675E1024}
+    ]))
 
 (defn brief-diversion-query-1b
   "
@@ -337,10 +349,10 @@
   ([]
    (let [db (->
                (make-db)
-               (d/db-with (get-schema))
-               (d/db-with (Earth-based-observations))
-               (d/db-with (more-schema))
-               (d/db-with (measurements)))]
+               (with-schema)
+               (with-Earth-based-observations)
+               (with-more-schema)
+               (with-measurements))]
      (d/q
        '{
          :find
@@ -352,33 +364,35 @@
            [?e :db/valueType]
          ]} db))))
 
-(defn more-schema-still
+(defn with-more-schema-still
   "
     Return the given database
     with a bit more schema transacted
   "
-  ([]
-   [{:db/ident :mass
-     :db/valueType :db.type/ref
-     :db/cardinality :db.cardinality/one}
-    {:db/ident :measurement/value
-     :db/valueType :db.type/bigdec
-     :db/cardinality :db.cardinality/one}
-    {:db/ident :measurement/unit
-     :db/valueType :db.type/keyword
-     :db/cardinality :db.cardinality/one}]))
+  ([db]
+    (d/db-with db
+      [{:db/ident :mass
+         :db/valueType :db.type/ref
+         :db/cardinality :db.cardinality/one}
+       {:db/ident :measurement/value
+         :db/valueType :db.type/bigdec
+         :db/cardinality :db.cardinality/one}
+       {:db/ident :measurement/unit
+         :db/valueType :db.type/keyword
+         :db/cardinality :db.cardinality/one}])))
 
-(defn proper-measurements
+(defn with-proper-measurements
   "
     Returns the given database
     with data from an experiment
     but do it right this time
   "
-  []
-  [
-   {:name :Earth :mass {:measurement/value 5.97237E1024M :measurement/unit :kg}}
-   {:name :Venus :mass {:measurement/value 4.8675E1024M :measurement/unit :kg}}
-   ])
+  [db]
+  (d/db-with db
+    [
+     {:name :Earth :mass {:measurement/value 5.97237E1024M :measurement/unit :kg}}
+     {:name :Venus :mass {:measurement/value 4.8675E1024M :measurement/unit :kg}}
+    ]))
 
 (defn brief-diversion-query-1c
   "
@@ -401,12 +415,12 @@
   ([]
    (let [db (->
                (make-db)
-               (d/db-with (get-schema))
-               (d/db-with (Earth-based-observations))
-               (d/db-with (more-schema))
-               (d/db-with (measurements))
-               (d/db-with (more-schema-still))
-               (d/db-with (proper-measurements)))]
+               (with-schema)
+               (with-Earth-based-observations)
+               (with-more-schema)
+               (with-measurements)
+               (with-more-schema-still)
+               (with-proper-measurements))]
      (d/q
        '{
          :find
@@ -440,12 +454,10 @@
     to use the database in real life
   "
   ([]
-   (let [db0 (-> (make-db)
-                 (d/db-with (get-schema))
-                 (d/db-with (more-schema-still)))
-         dbs (reductions (fn [r f] (d/db-with r (f))) db0
-               [Earth-based-observations Jupiter-probe-observations
-                Saturn-probe-observations Venus-probe-observations])]
+   (let [db0 (-> (make-db) (with-schema) (with-more-schema-still))
+         dbs (reductions (fn [r f] (f r)) db0
+               [with-Earth-based-observations with-Jupiter-probe
+                with-Saturn-probe with-Venus-probe])]
      (map
        (partial d/q
         '{
@@ -489,8 +501,8 @@
   "
   ([]
     (->> (make-db)
-      (d/db-with (get-schema))
-      (d/db-with (Earth-based-observations))
+      (with-schema)
+      (with-Earth-based-observations)
       (d/q
         '{:find [?e ?a ?f]
           :where
@@ -513,7 +525,7 @@
     Actually when facts are stored, the transaction
     and its time is stored too
 
-    [entity attribute value tx]
+    [entity attribute value t]
 
     is a full datom and we can add time to our queries
     by using a variable in the 4th position of a clause
@@ -521,19 +533,11 @@
     Each transaction is an entity in itself and we can
     use the attribute :db/txInstant to get the time
     of the transaction in which a fact was stored
-
-
-    sidenote: actually a full datom is
-
-    [entity attribute value tx op]
-
-    where op is a boolean indicating whether
-    the fact stored was an assertion or retraction
   "
   ([]
     (->> (make-db)
-      (d/db-with (get-schema))
-      (d/db-with (Earth-based-observations))
+      (with-schema)
+      (with-Earth-based-observations)
       (d/q
         '{:find [?n ?t ?i]
           :where
