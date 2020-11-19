@@ -6,15 +6,6 @@ A mini Datalog tutorial with minimal dependencies for people who know some Cloju
 
 Read, modify and evaluate the code & see what happens!
 
-```
-(use 'dt.dl)
-
-(test-query-0)
-(test-query-1)
-(test-query-2)
-...
-```
-
 
 ## License
 
